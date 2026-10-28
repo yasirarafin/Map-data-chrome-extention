@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Maps Lead Extractor Pro</title>
+  <link rel="stylesheet" href="sidepanel.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="theme-dark">
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo-box">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">LeadProspector <span class="badge-pro">PRO</span></div>
+          <div class="brand-subtitle">Google Maps Extractor & Enricher</div>
+        </div>
+      </div>
+      <div id="statusBadge" class="status-badge disconnected">
+        <span class="status-dot"></span>
+        <span id="statusText">Checking Tab...</span>
+      </div>
+    </header>
+
+    <!-- Map Connection Notice (Shown when not on Google Maps) -->
+    <div id="connectionBanner" class="alert-banner hidden">
+      <div class="alert-content">
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <div>
+          <strong>Not on Google Maps</strong>
+          <p>Please open Google Maps and perform a search to start extracting leads.</p>
+        </div>
+      </div>
+      <button id="btnOpenMaps" class="btn-sm btn-accent">Open Google Maps</button>
+    </div>
+
+    <!-- Extraction Configuration & Control Card -->
+    <section class="card config-card">
+      <div class="config-grid">
+        
+        <!-- Mode Switcher -->
+        <div class="config-field">
+          <label class="field-label">Scrape Depth</label>
+          <div class="segmented-control">
+            <button id="modeDeep" class="seg-btn active" data-mode="deep" title="Clicks every listing to pull full hours, coordinates, claim status, and amenities">
+              Deep Extraction
+            </button>
+            <button id="modeFast" class="seg-btn" data-mode="fast" title="Quickly extracts visible list info without opening details">
+              Fast Mode
+            </button>
+          </div>
+        </div>
+
+        <!-- Limits & Delays -->
+        <div class="config-row">
+          <div class="config-field">
+            <label class="field-label" for="maxResultsInput">Max Leads</label>
+            <select id="maxResultsInput" class="custom-select">
+              <option value="25">25 leads</option>
+              <option value="50" selected>50 leads</option>
+              <option value="100">100 leads</option>
+              <option value="250">250 leads</option>
+              <option value="500">500 leads</option>
+              <option value="9999">Unlimited</option>
+            </select>
+          </div>
+
+          <div class="config-field">
+            <label class="field-label" for="delaySelect">Speed / Jitter</label>
+            <select id="delaySelect" class="custom-select">
+              <option value="fast">Aggressive (1-2s)</option>
+              <option value="normal" selected>Balanced (2-3.5s)</option>
+              <option value="stealth">Stealth (3.5-6s)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Lead Enrichment Checkbox -->
+        <div class="checkbox-container">
+          <label class="checkbox-label" title="Fetches business websites in background to discover emails, social media profiles, CMS, and Ad Pixels">
+            <input type="checkbox" id="enrichWebsitesToggle" checked>
+            <span class="custom-check"></span>
+            <div class="check-text">
+              <span class="check-title">Auto-Enrich Websites</span>
+              <span class="check-desc">Find emails, socials (LinkedIn, FB, IG), CMS & ad pixels</span>
+            </div>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button id="btnStart" class="btn btn-primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          Start Scraping
+        </button>
+
+        <button id="btnPause" class="btn btn-secondary" disabled>
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" />
+            <rect x="14" y="4" width="4" height="16" />
+          </svg>
+          Pause
+        </button>
+
+        <button id="btnStop" class="btn btn-danger" disabled>
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="5" y="5" width="14" height="14" />
+          </svg>
+          Stop
+        </button>
+      </div>
+
+      <!-- Status Progress Bar -->
+      <div id="progressContainer" class="progress-container hidden">
+        <div class="progress-bar-wrapper">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="progressStatusText">Extracting leads...</span>
+          <span id="progressCountText">0 / 50</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Metric Stats -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+        <div>
+          <div id="statTotal" class="stat-value">0</div>
+          <div class="stat-label">Total Scraped</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+        </div>
+        <div>
+          <div id="statWebsites" class="stat-value">0</div>
+          <div class="stat-label">With Website</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+        </div>
+        <div>
+          <div id="statEmails" class="stat-value">0</div>
+          <div class="stat-label">Emails Found</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </div>
+        <div>
+          <div id="statUnclaimed" class="stat-value">0</div>
+          <div class="stat-label">Unclaimed Leads</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters & Search Toolbar -->
+    <section class="filter-section">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search business, city, phone, email...">
+      </div>
+
+      <div class="filter-pills">
+        <button class="filter-pill" data-filter="all">All</button>
+        <button class="filter-pill" data-filter="has-email">Has Email</button>
+        <button class="filter-pill" data-filter="has-phone">Has Phone</button>
+        <button class="filter-pill" data-filter="has-website">Has Website</button>
+        <button class="filter-pill" data-filter="unclaimed">Unclaimed Only</button>
+        <button class="filter-pill" data-filter="rating-4">⭐ 4.0+</button>
+      </div>
+    </section>
+
+    <!-- Data Table & Leads Stream -->
+    <section class="table-section">
+      <div class="table-header">
+        <div class="table-title">
+          <span>Captured Leads</span>
+          <span id="filteredCountBadge" class="count-pill">0</span>
+        </div>
+        <div class="table-actions">
+          <button id="btnClearData" class="btn-text danger" title="Clear all scraped data">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Business Name</th>
+              <th>Contact</th>
+              <th>Enriched Email</th>
+              <th>Rating</th>
+              <th>Tech Signals</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody">
+            <tr class="empty-row">
+              <td colspan="7">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <p>No leads captured yet.</p>
+                  <span>Open Google Maps, perform a search, and click <strong>Start Scraping</strong>.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Export Footer Bar -->
+    <footer class="export-footer">
+      <div class="export-label">
+        <span>Ready to export?</span>
+      </div>
+      <div class="export-buttons">
+        <button id="btnExportCsv" class="btn btn-export">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
+          </svg>
+          CSV (.csv)
+        </button>
+
+        <button id="btnExportExcel" class="btn btn-export">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <polyline points="8 13 12 17 16 13" />
+            <line x1="12" y1="9" x2="12" y2="17" />
+          </svg>
+          Excel (.xlsx)
+        </button>
+
+        <button id="btnExportJson" class="btn btn-export">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+          </svg>
+          JSON
+        </button>
+      </div>
+    </footer>
+
+    <!-- Lead Detail Modal -->
+    <div id="leadModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <h2 id="modalTitle" class="modal-title">Business Title</h2>
+            <div id="modalCategory" class="modal-subtitle">Category</div>
+          </div>
+          <button id="btnModalClose" class="modal-close">&times;</button>
+        </div>
+        <div id="modalBody" class="modal-body">
+          <!-- Filled dynamically via JS -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
